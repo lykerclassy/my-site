@@ -1,0 +1,77 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Tenant {
+  id           String   @id @default(cuid())
+  name         String
+  slug         String   @unique
+  contactPhone String
+  county       String?
+  town         String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  users  User[]
+  posts  Post[]
+}
+
+model User {
+  id        String   @id @default(cuid())
+  tenantId  String
+  name      String
+  email     String
+  password  String
+  role      UserRole @default(STAFF)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, email])
+}
+
+enum UserRole {
+  OWNER
+  STAFF
+}
+
+model Post {
+  id           String     @id @default(cuid())
+  tenantId     String
+  title        String
+  content      String
+  priceKES     Int?
+  imagesJson   String?
+  tags         String[]   @default([])
+  category     String?
+  visibility   Visibility  @default(PUBLIC)
+  status       PostStatus  @default(DRAFT)
+  publishedAt  DateTime?
+  location     String?
+  contactPhone String?
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, status, visibility, publishedAt])
+  @@index([tenantId, category])
+  @@index([tenantId, tags])
+}
+
+enum Visibility {
+  PUBLIC
+  PRIVATE
+}
+
+enum PostStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
